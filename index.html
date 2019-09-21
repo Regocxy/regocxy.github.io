@@ -9,7 +9,7 @@
         html {
             height: 100%;
         }
-        
+
         body {
             margin: 0;
             height: 100%;
@@ -17,7 +17,7 @@
             background-color: #ffffff;
             overflow: hidden;
         }
-        
+
         #nav {
             background: linear-gradient(to bottom, #ffffff 50%, #1d1d1d 97%, #333333 97%);
             width: 100%;
@@ -29,7 +29,11 @@
 
 <body>
     <div id="nav">
-        <img src="./img/icon.png"></img>
+        <map name="logo">
+            <area shape="rect" href="/" coords="12,13,91,32" alt="Regocxy">
+            <area shape="rect" href="https://gitee.com/regocxy/simple3D.git" coords="12,32,88,46" alt="Github">
+        </map>
+        <img src="./img/icon.png" usemap="#logo"></img>
     </div>
     <div>
         <a href="./pages/bunny.html" target="_blank"><img src="./img/bunny.jpg"></img>
