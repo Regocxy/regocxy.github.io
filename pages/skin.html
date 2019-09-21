@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>skin</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+        body {
+            font-family: Monospace;
+            background-color: #000;
+            color: #fff;
+            margin: 0px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas" width=1024 height=1024></canvas>
+    <script src="./libs/s3.js"></script>
+    <script>
+        let renderder = new s3.Renderer();
+        let scene = new s3.Scene();
+
+        let directionalLight1 = new s3.DirectionalLight(0xffeedd, 1.5).setParent(scene);
+        let directionalLight2 = new s3.DirectionalLight(0xddddff, 0.5).setParent(scene);
+
+        directionalLight1.position.set(1, 0.5, 1);
+        directionalLight2.position.set(- 1, 0.5, - 1);
+
+        let camera = new s3.PerspectiveCamera().setParent(scene);
+        camera.position.set(0, 0.2, 1);
+        camera.lookAt(scene.position);
+        camera.addComponent(s3.OrbitControl);
+
+        s3.MeshBuilder.Model({
+            url: "./assets/models/lee-perry-smith-head-scan-obj/lee-perry-smith-head-scan.obj",
+            materials: ["phong", "skin"],
+        }, object => {
+            scene.add(object);
+        });
+
+        function render() {
+            renderder.render(scene);
+            requestAnimationFrame(render);
+        }
+        render();
+    </script>
+</body>
+
+</html>
