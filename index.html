@@ -1,1 +1,51 @@
-Hello World
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title> obj </title>
+</head>
+
+<body>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        
+        canvas {
+            display: block;
+        }
+    </style>
+    <canvas id="canvas" width=1024 height=1024></canvas>
+    <script src="./libs/s3.js"></script>
+    <script>
+        let renderder = new s3.Renderer();
+        let scene = new s3.Scene();
+
+        let light = new s3.DirectionalLight();
+        scene.add(light);
+
+        let camera = new s3.PerspectiveCamera();
+        camera.position.set(0, 0.2, 0.2);
+        camera.lookAt(scene.position);
+        camera.addComponent(s3.OrbitControl);
+        scene.add(camera);
+
+        s3.MeshBuilder.Model({
+            url: "./assets/models/stanford-bunny-obj/stanford-bunny.obj"
+        }, object => {
+            scene.add(object);
+        });
+
+        function render() {
+            renderder.render(scene);
+            requestAnimationFrame(render);
+        }
+        render();
+    </script>
+</body>
+
+</html>
