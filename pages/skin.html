@@ -20,7 +20,7 @@
     <canvas id="canvas" width=1024 height=1024></canvas>
     <script src="./libs/s3.js"></script>
     <script>
-        let renderder = new s3.Renderer();
+        let renderer = new s3.Renderer();
         let scene = new s3.Scene();
 
         let directionalLight1 = new s3.DirectionalLight(0xffeedd, 1.5).setParent(scene);
@@ -36,16 +36,20 @@
 
         s3.MeshBuilder.Model({
             url: "./assets/models/lee-perry-smith-head-scan-obj/lee-perry-smith-head-scan.obj",
-            materials: ["phong", "skin"],
-        }, object => {
-            scene.add(object);
+            createMaterial: (opt) => {
+                if (opt.name === "Skin1") {
+                    opt.bumpScale = 0.005;
+                    return new s3.SkinMaterial(opt);
+                }
+                return new s3.PhongMaterial(opt);
+            }
+        }, (object) => {
+            object.setParent(scene);
+            object.find("Plane").removeSelf();
         });
 
-        function render() {
-            renderder.render(scene);
-            requestAnimationFrame(render);
-        }
-        render();
+        renderer.scene = scene;
+        renderer.render();
     </script>
 </body>
 

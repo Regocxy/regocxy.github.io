@@ -20,43 +20,37 @@
     <canvas id="canvas" width=1024 height=1024></canvas>
     <script src="./libs/s3.js"></script>
     <script>
-        let renderder = new s3.Renderer();
+        let renderer = new s3.Renderer({
+            toneMapping: s3.ToneMappingType.Simple,
+        });
         let scene = new s3.Scene();
 
         let ambientLight = new s3.Light(0x404040);
         scene.add(ambientLight);
 
-        let directionalLight1 = new s3.DirectionalLight(0xc0c090);
-        let directionalLight2 = new s3.DirectionalLight(0xc0c090);
+        let directionalLight1 = new s3.DirectionalLight(0xc0c090).setParent(scene);
+        let directionalLight2 = new s3.DirectionalLight(0xc0c090).setParent(scene);
 
         directionalLight1.position.set(-100, -50, 100);
         directionalLight2.position.set(100, 50, -100);
 
-        scene.add(directionalLight1);
-        scene.add(directionalLight2);
-
-        let camera = new s3.PerspectiveCamera();
+        let camera = new s3.PerspectiveCamera().setParent(scene);
         camera.position.set(0, 175, 500);
         camera.lookAt(scene.position);
         camera.addComponent(s3.OrbitControl);
-        scene.add(camera);
 
-        s3.MeshBuilder.Model({
-            url: "./assets/models/female02/female02.obj"
-        }, object => {
-            object.position.y = -50;
+        s3.MeshBuilder.Model({ url: "./assets/models/female02/female02.obj" }, object => {
+            object.position.x = -100;
             scene.add(object);
         });
 
-        // s3.MeshBuilder.Model("./assets/models/female02/female02_vertex_colors.obj", object => {
-        //     scene.add(object);
-        // });
+        s3.MeshBuilder.Model({ url: "./assets/models/female02/female02_vertex_colors.obj" }, object => {
+            object.position.x = 100;
+            scene.add(object);
+        });
 
-        function render() {
-            renderder.render(scene);
-            requestAnimationFrame(render);
-        }
-        render();
+        renderer.scene = scene;
+        renderer.render();
     </script>
 </body>
 

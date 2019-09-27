@@ -21,75 +21,46 @@
     <script src="./libs/s3.js"></script>
     <script src="./assets/models/cessna.js"></script>
     <script>
-        let renderer = new s3.Renderer()
+        class Rotation extends s3.Component {
+            update(dt) {
+                let t = Date.now() * 0.00025;
+                let position = this.object.position;
+                position.x = 60 * Math.sin(t);
+                position.y = 25;
+                position.z = 20 * Math.cos(t);
+            }
+        }
+
+        let renderer = new s3.Renderer();
         let scene = new s3.Scene();
         let gui = new s3.GUI();
 
-        let camera = new s3.PerspectiveCamera();
+        let camera = new s3.PerspectiveCamera().setParent(scene);
         camera.position.set(0, 0, 100);
         camera.lookAt(scene.position);
         camera.addComponent(s3.OrbitControl);
-        scene.add(camera);
 
-        let light = new s3.DirectionalLight();
-        light.shadow.mapSize.set(1024, 1024);
-        light.shadow.onInit = rt => {
-            let geometry = new s3.Geometry().set({
-                position: [
-                    -1, -1, 0,
-                    1, -1, 0,
-                    1, 1, 0,
-                    1, 1, 0,
-                    -1, 1, 0,
-                    -1, -1, 0
-                ],
-                uv: [
-                    0, 0,
-                    1, 0,
-                    1, 1,
-                    1, 1,
-                    0, 1,
-                    0, 0
-                ]
-            });
-            let material = new s3.UnpackDepthMaterial({ map: rt.texture });
-            let mesh = new s3.Mesh(geometry, material);
-            mesh.position.set(-300, 300, 0);
-            mesh.scale.set(100);
-            gui.add(mesh);
-        }
-        light.shadow.camera = new s3.OrthoCamera(-25, 25, 25, -25, 20, 100);
-        light.castShadow = true;
-        scene.add(light);
+        let light = new s3.DirectionalLight().setParent(scene);
+        light.addComponent(Rotation);
+        light.shadow = new s3.Shadow({ width: 1024, height: 1024, camera: new s3.OrthoCamera(-25, 25, 25, -25, 20, 100) });
 
-        let geometry = new s3.Geometry().set({
-            position: cessna.vertices,
-            normal: cessna.normals,
-            indice: cessna.indices
+        let depthPlane = s3.MeshBuilder.DepthPlane(100, 100, light.shadow.renderTarget.texture).setParent(gui);
+        depthPlane.position.set(-300, 300, 0);
+
+        s3.MeshBuilder.Model({ url: "./assets/cessna.json" }, object => {
+            object.setParent(scene);
+            object.castShadow = true;
+            object.receiveShadow = true;
         });
-        let material = new s3.PhongMaterial();
-        let mesh = new s3.Mesh(geometry, material);
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        scene.add(mesh);
 
-        let plane = s3.MeshBuilder.Plane(50, 50);
+        let plane = s3.MeshBuilder.Plane(50, 50).setParent(scene);
         plane.material.side = s3.SideType.Double;
         plane.rotation.x = s3.degToRad(-90);
         plane.receiveShadow = true;
-        scene.add(plane);
 
-        function render() {
-            let time = Date.now() * 0.00025;
-            light.position.x = 60 * Math.sin(time);
-            light.position.y = 25;
-            light.position.z = 20 * Math.cos(time);
-
-            renderer.render(scene);
-            renderer.render(gui);
-            requestAnimationFrame(render);
-        }
-        render();
+        renderer.scene = scene;
+        renderer.gui = gui;
+        renderer.render();
     </script>
 </body>
 

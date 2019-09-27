@@ -20,7 +20,7 @@
     <canvas id="canvas" width=1024 height=1024></canvas>
     <script src="./libs/s3.js"></script>
     <script>
-        let renderder = new s3.Renderer();
+        let renderer = new s3.Renderer();
         let scene = new s3.Scene();
 
         let light = new s3.DirectionalLight();
@@ -32,17 +32,20 @@
         camera.addComponent(s3.OrbitControl);
         scene.add(camera);
 
-        s3.MeshBuilder.Model({
-            url: "./assets/models/stanford-bunny-obj/stanford-bunny.obj"
-        }, object => {
-            scene.add(object);
+        scene.setBackground([
+            "./assets/models/stanford-bunny-obj/posx.png", "./assets/models/stanford-bunny-obj/negx.png",
+            "./assets/models/stanford-bunny-obj/posy.png", "./assets/models/stanford-bunny-obj/negy.png",
+            "./assets/models/stanford-bunny-obj/posz.png", "./assets/models/stanford-bunny-obj/negz.png",
+        ])
+
+        new s3.CTMLoader().load({ url: "./assets/models/stanford-bunny-obj/stanford-bunny.ctm" }, gemetry => {
+            new s3.MTLLoader().load({ url: "./assets/models/stanford-bunny-obj/stanford-bunny.mtl" }, materials => {
+                scene.add(new s3.Mesh(gemetry, materials));
+            })
         });
 
-        function render() {
-            renderder.render(scene);
-            requestAnimationFrame(render);
-        }
-        render();
+        renderer.scene = scene;
+        renderer.render();
     </script>
 </body>
 
