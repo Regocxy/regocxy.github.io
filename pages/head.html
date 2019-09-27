@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>skin</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+        body {
+            font-family: Monospace;
+            background-color: #000;
+            color: #fff;
+            margin: 0px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas" width=1024 height=1024></canvas>
+    <script src="./libs/s3.js"></script>
+    <script>
+        let hemiVertexShader = `
+        varying vec4 worldPosition;
+
+        void main() {
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            worldPosition = modelMatrix * vec4(position, 1.0);
+        }
+        `
+        let hemiFragmentShader = `
+        uniform vec3 topColor;
+        uniform vec3 bottomColor;
+        uniform float offset;
+        uniform float exponent;
+
+        varying vec4 worldPosition;
+
+        void main() {
+            float h = normalize(worldPosition.xyz + offset).y;
+            gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(h, exponent), 0.0)), 1.0);
+        }
+        `
+        class HemiMaterial extends s3.Material {
+
+            constructor() {
+                super({
+                    vertexShader: hemiVertexShader,
+                    fragmentShader: hemiFragmentShader,
+                })
+                this.topColor = new s3.Color(0).setHSV(0.6, 0.25, 0.5);
+                this.bottomColor = new s3.Color(0).setHSV(0.095, 0.375, 0.8);
+                this.offset = 2500;
+                this.exponent = 0.6;
+            }
+        }
+
+        let renderer = new s3.Renderer({
+            clearColor: 0x040404,
+            toneMapping: s3.ToneMappingType.Filmic,
+            toneMappingExposure: 1.5,
+            gammaInput: true,
+            depthPacking: true,
+        });
+        let scene = new s3.Scene();
+        let gui = new s3.GUI();
+
+
+        let useKeyLight = true;
+        let useMutiLight = true;
+
+        if (useKeyLight) {
+            let directionalLight = new s3.DirectionalLight(0xffffff, 0.75).setParent(scene);
+            directionalLight.position.set(500, 500, 500);
+            directionalLight.shadow = new s3.Shadow({ width: 1024, height: 1024, camera: new s3.OrthoCamera(-500, 500, 500, -500, 200, 1500) });
+
+            let depthPlane = s3.MeshBuilder.DepthPlane(100, 100, directionalLight.shadow.renderTarget.texture).setParent(gui);
+            depthPlane.position.set(-300, 400, 0);
+
+            if (useMutiLight) {
+                directionalLight.position.y = -300;
+
+                let directionalLight2 = new s3.DirectionalLight(0xffffff, 0.5).setParent(scene);
+                directionalLight2.position.set(-500, 500, 500);
+                directionalLight2.shadow = new s3.Shadow({ width: 1024, height: 1024, camera: new s3.OrthoCamera(-500, 500, 500, -500, 200, 1500) });
+
+                let depthPlane2 = s3.MeshBuilder.DepthPlane(100, 100, directionalLight2.shadow.renderTarget.texture).setParent(gui);
+                depthPlane2.position.set(300, 400, 0);
+
+                let directionalLight3 = new s3.DirectionalLight(0xffffff, 0.53).setParent(scene);
+                directionalLight3.position.set(1500, -750, -1500);
+                directionalLight3.shadow = new s3.Shadow({ width: 1024, height: 1024, camera: new s3.OrthoCamera(-500, 500, 500, -500, 0.1, 5500) });
+
+                directionalLight.color.setHSV(0.06, 0.1, 0.8);
+                directionalLight2.color.setHSV(0, 0.1, 1);
+            }
+        }
+
+
+        let camera = new s3.PerspectiveCamera(18, 1, 1, 7000).setParent(scene);
+        camera.position.set(0, 170, 1200);
+        camera.lookAt(scene.position);
+
+        let sky = s3.MeshBuilder.Sphere(5000, 32).setParent(scene);
+        sky.material = new HemiMaterial();
+        sky.position.y = 120;
+
+        new s3.CTMLoader().load({ url: "./assets/models/head/head.ctm" }, geometry => {
+            let skinMaterial = new s3.PhongMaterial({
+                diffuse: 0xfff4ef,
+                specular: 0x2b2b2b,
+                shininess: 0.035,
+                wrapRGB: new s3.Vec3(0.75, 0.5, 0.5),
+                url: new s3.Texture2D({ url: "./assets/models/head/diffuse2k2.jpg", flipY: false, anisotropy: 4 }),
+                bumpUrl: new s3.Texture2D({ url: "./assets/models/head/displacement1k.jpg", flipY: false, anisotropy: 4 }),
+                glossUrl: new s3.Texture2D({ url: "./assets/models/head/gloss2k.jpg", flipY: false, anisotropy: 4 }),
+                bumpScale: 10,
+                defines: { BRDF_GGX: "" },
+                extensions: { derivatives: true },
+            })
+            let mesh = new s3.Mesh(geometry, skinMaterial).setParent(scene);
+            mesh.position.y = 30;
+            mesh.scale.set(150);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.addComponent(s3.MouseTracing).init(renderer.width, renderer.height);
+
+            let eyeMap = new s3.Texture2D({ url: "./assets/models/head/eye1k_blue.jpg", flipY: false, anisotropy: 4 });
+            let eyeMaterial = new s3.PhongMaterial({
+                diffuse: 0xffffff,
+                specular: 0x2b2b2b,
+                shininess: 0.2,
+                wrapRGB: new s3.Vec3(0.75, 0.5, 0.5),
+                url: eyeMap,
+                glossUrl: eyeMap,
+                bumpUrl: eyeMap,
+                bumpScale: 0.5,
+                defines: { BRDF_GGX: "" },
+                extensions: { derivatives: true },
+            })
+
+            let corneaMaterial = new s3.PhongMaterial({
+                diffuse: 0x000000,
+                specular: 0x2b2b2b,
+                shininess: 1024,
+                opacity: 0.925,
+                blending: s3.BlendType.Add,
+                defines: { BRDF_GGX: "" },
+            })
+
+            let sphereGeometry = new s3.SphereGeometryUV(32, 16);
+
+            let leftEye = new s3.Mesh(sphereGeometry, eyeMaterial).setParent(mesh);
+            leftEye.rotation.set(1.65, 0, -0.1);
+            leftEye.scale.set(0.199);
+            leftEye.position.set(0.3207, 0.6169, 0.7379);
+            leftEye.receiveShadow = true;
+            leftEye.addComponent(s3.Gyroscope);
+
+            let leftCornea = new s3.Mesh(sphereGeometry, corneaMaterial).setParent(leftEye);
+            leftCornea.scale.set(0.7, 1.07, 0.7);
+            leftCornea.position.set(0, -0.01, 0);
+            leftCornea.receiveShadow = true;
+
+            let rightEye = new s3.Mesh(sphereGeometry, eyeMaterial).setParent(mesh);
+            rightEye.rotation.set(1.65, 0, 0.05);
+            rightEye.scale.set(0.199);
+            rightEye.position.set(-0.4355, 0.6131, 0.7733);
+            rightEye.receiveShadow = true;
+            rightEye.addComponent(s3.Gyroscope);
+
+            let rightCornea = new s3.Mesh(sphereGeometry, corneaMaterial).setParent(rightEye);
+            rightCornea.scale.set(0.7, 1.07, 0.7);
+            rightCornea.position.set(0, -0.01, 0);
+            rightCornea.receiveShadow = true;
+        })
+
+        scene.fog = new s3.Fog(0x222222, 1000, 2000);
+        renderer.scene = scene;
+        renderer.gui = gui;
+        renderer.render();
+    </script>
+</body>
+
+</html>
